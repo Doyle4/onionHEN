@@ -318,7 +318,7 @@ default from [`config.ini.example`](config.ini.example).
 
 | Tool | Purpose |
 | --- | --- |
-| [`scripts/daemon_log.py`](scripts/daemon_log.py) | Stream daemon logs from the console |
+| [`scripts/daemon_log.py`](scripts/daemon_log.py) | Stream daemon logs; use [`scripts/capture_klog.py`](scripts/capture_klog.py) to capture kernel logs |
 | [`scripts/shutdown_onion.py`](scripts/shutdown_onion.py) | Shut down the OnionHEN userland stack without killing `kstuff` |
 | [`scripts/ps5_cmake.sh`](scripts/ps5_cmake.sh) | Run CMake through the PS5 payload SDK |
 | [`scripts/sync_dependencies.sh`](scripts/sync_dependencies.sh) | Fetch or build external payload inputs |
