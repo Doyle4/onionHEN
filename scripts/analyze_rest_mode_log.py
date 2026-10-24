@@ -52,7 +52,7 @@ class Cycle:
     logged_resume_delay_seconds: int | None = None
     warnings: int = 0
     errors: int = 0
-    signals: set[str] = field(default_factory=set)
+    signals: dict[str, int] = field(default_factory=dict)
 
     def summary(self) -> dict[str, object]:
         elapsed = None
@@ -68,7 +68,7 @@ class Cycle:
             "standby_at": self.standby_at,
             "suspend_at": self.suspend_at,
             "working_at": self.working_at,
-            "resume_to_working_seconds": elapsed,
+            "standby_to_working_seconds": elapsed,
             "listener_recovery_ready_at": self.listener_recovery_ready_at,
             "shellui_scheduled_at": self.shellui_scheduled_at,
             "toolbox_activation_at": self.toolbox_activation_at,
@@ -77,7 +77,7 @@ class Cycle:
             "toolbox_online_at": self.toolbox_online_at,
             "warnings": self.warnings,
             "errors": self.errors,
-            "signals": sorted(self.signals),
+            "signals": dict(sorted(self.signals.items())),
         }
 
 
@@ -116,7 +116,7 @@ def parse_log(lines: list[str]) -> list[dict[str, object]]:
 
         for signal, markers in SIGNALS.items():
             if any(marker.casefold() in lower for marker in markers):
-                current.signals.add(signal)
+                current.signals[signal] = current.signals.get(signal, 0) + 1
 
     if current is not None:
         cycles.append(current)
@@ -136,7 +136,7 @@ def print_text(
         if cycle["suspend_at"] is not None:
             print(f"  suspend: {cycle['suspend_at']}", file=output)
         if cycle["working_at"] is not None:
-            elapsed = cycle["resume_to_working_seconds"]
+            elapsed = cycle["standby_to_working_seconds"]
             suffix = f" ({elapsed}s after standby)" if elapsed is not None else ""
             print(f"  working: {cycle['working_at']}{suffix}", file=output)
         else:
@@ -149,7 +149,8 @@ def print_text(
             ("toolbox_online_at", "Toolbox online"),
         ):
             value = cycle[key]
-            print(f"  {label}: {'yes' if value is not None else 'not recorded'}", file=output)
+            rendered = value if value is not None else "not recorded"
+            print(f"  {label}: {rendered}", file=output)
 
         elapsed = cycle["schedule_to_activation_seconds"]
         if elapsed is not None:
@@ -178,7 +179,11 @@ def print_text(
 
         print(f"  warnings/errors: {cycle['warnings']}/{cycle['errors']}", file=output)
         signals = cycle["signals"]
-        print(f"  recognized failure signals: {', '.join(signals) if signals else 'none'}", file=output)
+        rendered_signals = ", ".join(f"{name}={count}" for name, count in signals.items())
+        print(
+            f"  recognized failure signals: {rendered_signals if rendered_signals else 'none'}",
+            file=output,
+        )
 
 
 def main() -> int:
