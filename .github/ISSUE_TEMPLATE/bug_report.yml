@@ -7,6 +7,7 @@ body:
     attributes:
       value: |
         Firmware, loader, and other running payloads matter more than a long write-up.
+        If the PS5 kernel panics or ShellUI crashes/restarts, include the matching kernel log from klogsrv if available; OnionHEN_crash.log may be empty for these system crashes.
 
   - type: input
     id: version
@@ -34,6 +35,17 @@ body:
         - Other
     validations:
       required: true
+
+  - type: dropdown
+    id: kstuff
+    attributes:
+      label: Bundled kstuff state at startup
+      description: For boot or kernel-panic issues, note whether bundled kstuff was enabled or external kstuff was running.
+      options:
+        - Bundled kstuff enabled
+        - Bundled kstuff disabled; external kstuff was started before OnionHEN
+        - Bundled kstuff disabled; no external kstuff
+        - Not sure or not applicable
 
   - type: dropdown
     id: area
@@ -84,7 +96,7 @@ body:
     id: logs
     attributes:
       label: Logs
-      description: Attach `/data/OnionHEN/OnionHEN_crash.log` for a daemon crash, plus relevant lines from `OnionHEN.log` and `OnionHEN_util_daemon.log`.
+      description: Attach `/data/OnionHEN/OnionHEN_crash.log` for a daemon crash, plus relevant lines from `OnionHEN.log` and `OnionHEN_util_daemon.log`. For a kernel panic or ShellUI crash/restart, attach the matching kernel log from klogsrv if available.
       render: text
     validations:
       required: true
