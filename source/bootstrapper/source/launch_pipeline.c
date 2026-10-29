@@ -153,20 +153,29 @@ static void launch_kstuff(LaunchContext *context, uint32_t firmware_version,
                           bool autoload) {
   char probe[100] = {0};
   const bool disabled_by_usb = if_exists("/mnt/usb0/no_kstuff");
-  if (disabled_by_usb || !autoload) {
-    LOG_DEBUG("kstuff disabled (%s)",
-              disabled_by_usb ? "usb no_kstuff" : "kstuff.autoload=false");
-    onion_ready_signal(ONION_READY_KSTUFF);
-    return;
-  }
-
   if (firmware_version < 0x3000000) {
+    if (disabled_by_usb || !autoload) {
+      LOG_INFO("kstuff load skipped (%s; firmware=0x%08x)",
+               disabled_by_usb ? "usb no_kstuff" : "kstuff.autoload=false",
+               (unsigned)firmware_version);
+    }
     onion_ready_signal(ONION_READY_KSTUFF);
     return;
   }
 
+  /* Detect a preloaded external payload even when autoload is disabled. */
   if (kstuff_already_running()) {
-    LOG_WARN("kstuff already running / mprotect OK -- skip launch");
+    LOG_INFO("kstuff already active; skipping payload launch "
+             "(firmware=0x%08x)",
+             (unsigned)firmware_version);
+    onion_ready_signal(ONION_READY_KSTUFF);
+    return;
+  }
+
+  if (disabled_by_usb || !autoload) {
+    LOG_INFO("kstuff load skipped (%s; firmware=0x%08x)",
+             disabled_by_usb ? "usb no_kstuff" : "kstuff.autoload=false",
+             (unsigned)firmware_version);
     onion_ready_signal(ONION_READY_KSTUFF);
     return;
   }
