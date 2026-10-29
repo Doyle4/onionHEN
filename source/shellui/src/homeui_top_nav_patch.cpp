@@ -338,6 +338,7 @@ static_assert(sizeof(kPlainJsNewAppErrorSourcePrefix) <=
 
 /* Latches keep bundle diagnostics from repeating on every RNPS reload. */
 std::atomic<bool> g_logged_unsupported_homeui_skip{false};
+std::atomic<bool> g_logged_unsupported_source_homeui_skip{false};
 #if SHELL_DEBUG == 1
 std::atomic<bool> g_logged_non_homeui_skip{false};
 #endif
@@ -621,6 +622,26 @@ static bool source_bytes_at(const SourceBundleView &bundle, size_t offset,
                             const unsigned char *expected, size_t len) {
   return range_contains(bundle.size, offset, len) &&
          bytes_equal(bundle.data + offset, expected, len);
+}
+
+static bool source_contains_string(const SourceBundleView &bundle,
+                                   const char *expected) {
+  if (!bundle.data || !expected) {
+    return false;
+  }
+
+  const size_t expected_length = strlen(expected);
+  if (expected_length > bundle.size) {
+    return false;
+  }
+
+  for (size_t offset = 0; offset <= bundle.size - expected_length; ++offset) {
+    if (memcmp(bundle.data + offset, expected, expected_length) == 0) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 static bool source_is_target(const SourceBundleView &bundle,
@@ -975,8 +996,24 @@ static bool patch_source_homeui_top_nav(const SourceBundleView &bundle,
   const SourceHomeUiProfile *profile =
       find_source_homeui_profile(bundle, kind);
   if (!profile) {
+    const bool has_homeui_markers =
+        source_contains_string(bundle, "NPXS40002") &&
+        source_contains_string(bundle, "pshomeui:navigateToHome");
+    if (has_homeui_markers &&
+        !g_logged_unsupported_source_homeui_skip.exchange(
+            true, std::memory_order_relaxed)) {
+      const char *kind_name = kind == SourceBundleKind::LegacyRnps
+                                  ? "legacy-rnps"
+                                  : "plain-js";
+      LOG_WARN("homeui_top_nav_patch: unsupported source HomeUI "
+               "(kind=%s rnps_base=0x%llx payload_size=0x%llx)",
+               kind_name, (unsigned long long)bundle.base_offset,
+               (unsigned long long)bundle.size);
+    }
 #if SHELL_DEBUG == 1
-    LOG_WARN("homeui_top_nav_patch: skip unknown source HomeUI");
+    if (!has_homeui_markers) {
+      LOG_WARN("homeui_top_nav_patch: skip unknown source bundle");
+    }
 #endif
     return false;
   }
