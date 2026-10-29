@@ -164,7 +164,7 @@ static void launch_kstuff(LaunchContext *context, uint32_t firmware_version,
   }
 
   /* Report active mprotect capability even when autoload is disabled. */
-  if (kstuff_already_running()) {
+  if (kstuff_mprotect_available()) {
     LOG_INFO("kstuff payload launch skipped; mprotect capability already "
              "active "
              "(firmware=0x%08x)",
