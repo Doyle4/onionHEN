@@ -1006,7 +1006,7 @@ static bool patch_source_homeui_top_nav(const SourceBundleView &bundle,
                                   ? "legacy-rnps"
                                   : "plain-js";
       LOG_WARN("homeui_top_nav_patch: unsupported source HomeUI "
-               "(kind=%s rnps_base=0x%llx payload_size=0x%llx)",
+               "(kind=%s bundle_base=0x%llx payload_size=0x%llx)",
                kind_name, (unsigned long long)bundle.base_offset,
                (unsigned long long)bundle.size);
     }
