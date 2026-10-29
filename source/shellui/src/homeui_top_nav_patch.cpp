@@ -336,10 +336,10 @@ static_assert(sizeof(kLegacy5x7xNewAppErrorSourcePrefix) <=
 static_assert(sizeof(kPlainJsNewAppErrorSourcePrefix) <=
               sizeof(kPlainJsOldAppErrorSource));
 
-#if SHELL_DEBUG == 1
-/* Latches so an unsupported HomeUI is reported once, not every reload. */
-std::atomic<bool> g_logged_non_homeui_skip{false};
+/* Latches keep bundle diagnostics from repeating on every RNPS reload. */
 std::atomic<bool> g_logged_unsupported_homeui_skip{false};
+#if SHELL_DEBUG == 1
+std::atomic<bool> g_logged_non_homeui_skip{false};
 #endif
 void (*g_react_button_set_icon_source_orig)(MonoObject *instance,
                                             MonoObject *source) = nullptr;
@@ -731,7 +731,6 @@ static bool hbc_source_hash_matches(const HbcView &hbc,
                      kHbcSourceHashSize);
 }
 
-#if SHELL_DEBUG == 1
 static void format_hbc_source_hash(const HbcView &hbc, char *out,
                                    size_t out_size) {
   static const char kHex[] = "0123456789abcdef";
@@ -752,7 +751,6 @@ static void format_hbc_source_hash(const HbcView &hbc, char *out,
   }
   out[kHbcSourceHashSize * 2] = '\0';
 }
-#endif
 
 static bool validate_homeui_profile_markers(const HbcView &hbc,
                                             const HomeUiPatchProfile &profile) {
@@ -781,7 +779,6 @@ find_homeui_patch_profile(const HbcView &hbc, size_t file_length,
   return nullptr;
 }
 
-#if SHELL_DEBUG == 1
 static bool looks_like_profiled_homeui(const HbcView &hbc) {
   for (size_t i = 0;
        i < sizeof(kHomeUiPatchProfiles) / sizeof(kHomeUiPatchProfiles[0]);
@@ -794,7 +791,6 @@ static bool looks_like_profiled_homeui(const HbcView &hbc) {
 
   return false;
 }
-#endif
 
 static bool validate_patch(const HbcView &hbc, const BytePatch &patch,
                            bool *already_applied) {
@@ -1117,8 +1113,8 @@ void patch_homeui_top_nav(unsigned char *buffer, int *size_ptr,
   const HomeUiPatchProfile *profile =
       find_homeui_patch_profile(hbc, hbc_file_length, hbc_version);
   if (!profile) {
-#if SHELL_DEBUG == 1
-    if (looks_like_profiled_homeui(hbc)) {
+    const bool has_homeui_markers = looks_like_profiled_homeui(hbc);
+    if (has_homeui_markers) {
       if (!g_logged_unsupported_homeui_skip.exchange(
               true, std::memory_order_relaxed)) {
         char source_hash[kHbcSourceHashSize * 2 + 1];
@@ -1129,8 +1125,10 @@ void patch_homeui_top_nav(unsigned char *buffer, int *size_ptr,
                     (unsigned long long)hbc.base_offset, hbc_version,
                     (unsigned long long)hbc_file_length, source_hash);
       }
-    } else if (!g_logged_non_homeui_skip.exchange(true,
-                                                   std::memory_order_relaxed)) {
+    }
+#if SHELL_DEBUG == 1
+    if (!has_homeui_markers &&
+        !g_logged_non_homeui_skip.exchange(true, std::memory_order_relaxed)) {
       LOG_WARN("homeui_top_nav_patch: skip non-HomeUI HBC "
                   "(hbc_base=0x%llx version=%u file_length=0x%llx)",
                   (unsigned long long)hbc.base_offset, hbc_version,
