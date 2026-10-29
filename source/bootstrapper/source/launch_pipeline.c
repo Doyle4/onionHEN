@@ -181,8 +181,9 @@ static void launch_kstuff(LaunchContext *context, uint32_t firmware_version,
 
   const uint8_t *elf = override_elf ? override_elf : kstuff_start;
   const size_t size = override_elf ? override_size : (size_t)kstuff_size;
-  LOG_INFO("Selected kstuff source: %s (%zu bytes)",
-           override_elf ? "external override" : "bundled", size);
+  LOG_INFO("Selected kstuff source: %s (%zu bytes) firmware=0x%08x",
+           override_elf ? "external override" : "bundled", size,
+           (unsigned)firmware_version);
   const bool sent =
       launch_blob(context, elf, size, "kstuff", "kstuff.elf");
   free(override_elf);
