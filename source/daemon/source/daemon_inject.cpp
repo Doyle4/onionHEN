@@ -109,11 +109,11 @@ bool toolbox_wait_resume_delay(pid_t pid, uint32_t gen) {
   uint64_t delay = g_settings.snapshot().rest_mode_delay_seconds;
   if (delay > static_cast<uint64_t>(onion::kRestModeDelayMaxSeconds))
     delay = onion::kRestModeDelayMaxSeconds;
+  LOG_INFO("rest: resume delay %llu s after trophy sprx pid=%d",
+           static_cast<unsigned long long>(delay), static_cast<int>(pid));
   if (delay == 0)
     return true;
 
-  LOG_DEBUG("rest: resume delay %llu s after trophy sprx pid=%d",
-            static_cast<unsigned long long>(delay), static_cast<int>(pid));
   for (uint64_t i = 0; i < delay; ++i) {
     if (g_rest_gen.load(std::memory_order_acquire) != gen) {
       LOG_DEBUG("rest: resume delay superseded gen=%u pid=%d", gen,

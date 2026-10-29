@@ -163,11 +163,11 @@ def print_text(
         if expected_delay is not None:
             logged_delay = cycle["logged_resume_delay_seconds"]
             if logged_delay is None:
-                print("  configured delay in debug log: not recorded", file=output)
+                print("  configured delay in log: not recorded", file=output)
             else:
                 relation = "matches" if logged_delay == expected_delay else "differs from"
                 print(
-                    f"  configured delay in debug log: {logged_delay}s ({relation} expected)",
+                    f"  configured delay in log: {logged_delay}s ({relation} expected)",
                     file=output,
                 )
             if elapsed is None:
