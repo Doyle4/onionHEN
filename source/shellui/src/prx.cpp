@@ -483,21 +483,28 @@ struct MonoHookSpec {
   bool required;
 };
 
-bool install_mono_hook(const MonoHookSpec& h) {
+bool install_mono_hook(const MonoHookSpec& h, bool expected_missing = false) {
   const uint64_t addr =
-      Get_Address_of_Method(h.image, h.name_space, h.klass, h.method, h.argc);
+      Get_Address_of_Method(h.image, h.name_space, h.klass, h.method, h.argc,
+                            false);
   if (!addr) {
-    LOG_ERROR("Hook target missing: %s", h.name);
-    if (h.required)
+    if (h.required) {
+      LOG_ERROR("Hook target missing: %s", h.name);
       notify("notify.hook.target");
+    } else if (!expected_missing) {
+      LOG_WARN("Optional hook target unavailable: %s", h.name);
+    }
     return !h.required;
   }
   LOG_DEBUG("Installing mono hook: %s target=%#02lx hook=%p", h.name, addr,
               h.hook);
   if (!InstallDetour(addr, h.hook, h.orig)) {
-    LOG_ERROR("Detour failed: %s", h.name);
-    if (h.required)
+    if (h.required) {
+      LOG_ERROR("Detour failed: %s", h.name);
       notify("notify.hook.install");
+    } else {
+      LOG_WARN("Optional hook detour failed: %s", h.name);
+    }
     return !h.required;
   }
   return true;
@@ -629,14 +636,16 @@ bool install_hooks(const ShellImages& img) {
   // --- BootHelper.Boot: 3-arg then 2-arg ---
   if (!install_mono_hook({"BootHelper.Boot(3)", img.app_system, "Sce.Vsh.ShellUI.AppSystem",
                           "BootHelper", "Boot", 3, reinterpret_cast<void*>(&uri_boot_hook),
-                          reinterpret_cast<void**>(&boot_orig), false}) ||
+                          reinterpret_cast<void**>(&boot_orig), false}, true) ||
       !boot_orig) {
     if (!install_mono_hook(
             {"BootHelper.Boot(2)", img.app_system, "Sce.Vsh.ShellUI.AppSystem",
              "BootHelper", "Boot", 2, reinterpret_cast<void*>(&uri_boot_hook_2),
-             reinterpret_cast<void**>(&boot_orig_2), false}) ||
-        !boot_orig_2)
+             reinterpret_cast<void**>(&boot_orig_2), false}, true) ||
+        !boot_orig_2) {
+      LOG_WARN("No supported BootHelper.Boot overload found (3 or 2 arguments)");
       notify("notify.hook.boot");
+    }
   }
 
   // --- CaptureScreen: 4-arg then 5-arg ---
@@ -644,15 +653,17 @@ bool install_hooks(const ShellImages& img) {
           {"CaptureScreen(4)", img.capture_menu, "Sce.Vsh.ShellUI.CaptureMenu",
            "CaptureController", "CaptureScreen", 4,
            reinterpret_cast<void*>(&CaptureScreen_old),
-           reinterpret_cast<void**>(&CaptureScreen_orig_old), false}) ||
+           reinterpret_cast<void**>(&CaptureScreen_orig_old), false}, true) ||
       !CaptureScreen_orig_old) {
     if (!install_mono_hook(
             {"CaptureScreen(5)", img.capture_menu, "Sce.Vsh.ShellUI.CaptureMenu",
              "CaptureController", "CaptureScreen", 5,
              reinterpret_cast<void*>(&CaptureScreen_new),
-             reinterpret_cast<void**>(&CaptureScreen_orig_new), false}) ||
-        !CaptureScreen_orig_new)
+             reinterpret_cast<void**>(&CaptureScreen_orig_new), false}, true) ||
+        !CaptureScreen_orig_new) {
+      LOG_WARN("No supported CaptureScreen overload found (4 or 5 arguments)");
       notify("notify.hook.capture");
+    }
   }
 
   // --- GetManifestResourceStream (class name differs on 3.xx) ---
