@@ -56,6 +56,7 @@ class Cycle:
     signals: dict[str, int] = field(default_factory=dict)
 
     def summary(self) -> dict[str, object]:
+        """Return this cycle as a JSON-friendly summary of observed events."""
         elapsed = None
         if self.standby_at is not None and self.working_at is not None:
             delta = self.working_at - self.standby_at
@@ -83,6 +84,7 @@ class Cycle:
 
 
 def parse_log(lines: list[str]) -> list[dict[str, object]]:
+    """Group daemon log lines into Rest Mode cycles and failure signals."""
     cycles: list[Cycle] = []
     current: Cycle | None = None
 
@@ -127,6 +129,7 @@ def parse_log(lines: list[str]) -> list[dict[str, object]]:
 def print_text(
     summaries: list[dict[str, object]], output: TextIO, expected_delay: int | None
 ) -> None:
+    """Write readable cycle summaries and any requested delay comparison."""
     print(f"Rest Mode cycles found: {len(summaries)}", file=output)
     if not summaries:
         print("No MAIN_ON_STANDBY markers found.", file=output)
@@ -188,6 +191,7 @@ def print_text(
 
 
 def main() -> int:
+    """Read the selected log input and emit the requested report format."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("log", help="log file path, or - to read from stdin")
     parser.add_argument("--json", action="store_true", help="write machine-readable JSON")
