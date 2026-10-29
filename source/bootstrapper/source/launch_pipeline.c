@@ -163,9 +163,10 @@ static void launch_kstuff(LaunchContext *context, uint32_t firmware_version,
     return;
   }
 
-  /* Detect a preloaded external payload even when autoload is disabled. */
+  /* Report active mprotect capability even when autoload is disabled. */
   if (kstuff_already_running()) {
-    LOG_INFO("kstuff already active; skipping payload launch "
+    LOG_INFO("kstuff payload launch skipped; mprotect capability already "
+             "active "
              "(firmware=0x%08x)",
              (unsigned)firmware_version);
     onion_ready_signal(ONION_READY_KSTUFF);
