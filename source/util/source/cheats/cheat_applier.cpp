@@ -259,8 +259,15 @@ int CheatApplier::toggle(const game_context_t &game, onion_cheat_file_t &file,
     Snapshot snapshot;
     snapshot.address = patch.address;
     snapshot.bytes.resize(reserve_len);
-    if (backend->read(pid, snapshot.address, snapshot.bytes.data(),
-                      snapshot.bytes.size()) < 0) {
+    const int read_result = backend->read(
+        pid, snapshot.address, snapshot.bytes.data(), snapshot.bytes.size());
+    if (read_result < 0) {
+      LOG_ERROR(
+          "[Cheat] Snapshot read failed pid=%d patch=%zu/%zu addr=0x%llx "
+          "len=%zu rc=%d",
+          (int)pid, i + 1, resolved.size(),
+          (unsigned long long)snapshot.address, snapshot.bytes.size(),
+          read_result);
       status = status_tr("notify.cheats.snapshot_failed", entry.name);
       return -1;
     }
