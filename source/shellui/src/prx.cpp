@@ -506,14 +506,19 @@ bool install_mono_hook(const MonoHookSpec& h) {
 bool install_optional_diag(const char* tag, MonoImage* image, const char* ns,
                            const char* klass, const char* method, int argc,
                            void* hook, void** orig) {
-  const uint64_t addr = Get_Address_of_Method(image, ns, klass, method, argc);
+  const uint64_t addr = Get_Address_of_Method(image, ns, klass, method, argc,
+                                               false);
   if (!addr) {
-    LOG_ERROR("%s not found", tag);
+    LOG_WARN("%s unavailable (non-fatal)", tag);
     return false;
   }
   const bool installed = InstallDetour(addr, hook, orig);
-  LOG_DEBUG(installed ? "%s hooked" : "%s failed to detour", tag);
-  return installed;
+  if (!installed) {
+    LOG_WARN("%s detour unavailable (non-fatal)", tag);
+    return false;
+  }
+  LOG_DEBUG("%s hooked", tag);
+  return true;
 }
 
 bool install_hooks(const ShellImages& img) {
