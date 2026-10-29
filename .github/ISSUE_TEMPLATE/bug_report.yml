@@ -93,6 +93,14 @@ body:
         - label: Other
 
   - type: textarea
+    id: payload_timing
+    attributes:
+      label: Payload load order and timing
+      description: List other payloads/plugins in the order they start, the delay before OnionHEN is loaded, and whether external USB storage is connected.
+    validations:
+      required: false
+
+  - type: textarea
     id: logs
     attributes:
       label: Logs
