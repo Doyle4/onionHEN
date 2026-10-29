@@ -69,7 +69,7 @@ uint64_t resolveAddr(const util_module_info_t &mod, const onion_patch_t &patch,
 }
 
 void fixMasterCode(const game_context_t &game, onion_cheat_file_t &file,
-                   onion_cheat_entry_t &entry, uint64_t base,
+                   onion_cheat_entry_t &entry, bool is_ps2, uint64_t base,
                    IMemoryBackend &mem) {
   if (file.master_code_id < 0 || !containsToken(entry.name, "MC") ||
       entry.patch_count != 1 || entry.patches[0].section == 0) {
@@ -82,7 +82,7 @@ void fixMasterCode(const game_context_t &game, onion_cheat_file_t &file,
   auto &mp = master.patches[0];
   auto &dp = entry.patches[0];
   const uint64_t mc_addr =
-      mp.absolute ? mp.offset : (base + mp.offset);
+      (is_ps2 || mp.absolute) ? mp.offset : (base + mp.offset);
   std::vector<uint8_t> buf(mp.on_len);
   if (mem.read(game.pid, mc_addr, buf.data(), mp.on_len) < 0) {
     return;
@@ -199,7 +199,7 @@ int CheatApplier::toggle(const game_context_t &game, onion_cheat_file_t &file,
        containsToken(entry.name, "Mastercode"))) {
     file.master_code_id = index;
   } else {
-    fixMasterCode(target, file, entry, base, *backend);
+    fixMasterCode(target, file, entry, is_ps2, base, *backend);
   }
 
   std::vector<ResolvedPatch> resolved;
