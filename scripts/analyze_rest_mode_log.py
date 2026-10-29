@@ -33,7 +33,8 @@ EVENTS = {
 }
 
 SIGNALS = {
-    "elf_mapping_or_protection": ("pt_mmap", "pt_mprotect", "pt_msync"),
+    "elf_mapping_or_protection": ("pt_mmap", "pt_mprotect"),
+    "elf_synchronization": ("pt_msync",),
     "payload_load_or_arguments": ("Failed to load ELF", "Failed to allocate payload args"),
     "loader_recovery_failed": ("loader recovery failed",),
 }
