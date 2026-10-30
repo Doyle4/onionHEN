@@ -268,7 +268,8 @@ int CheatApplier::toggle(const game_context_t &game, onion_cheat_file_t &file,
 
   std::vector<Snapshot> snapshots;
   snapshots.reserve(resolved.size());
-  for (const ResolvedPatch &patch : resolved) {
+  for (size_t i = 0; i < resolved.size(); ++i) {
+    const ResolvedPatch &patch = resolved[i];
     const size_t reserve_len = std::max(patch.on_len, patch.off_len);
     Snapshot snapshot;
     snapshot.address = patch.address;
