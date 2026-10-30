@@ -76,6 +76,7 @@ OnPressResult remove_path(OnPressContext &ctx) {
   --g_settings.custom_pkg_search_path_count;
   g_settings.custom_pkg_search_paths[g_settings.custom_pkg_search_path_count]
       .clear();
+  ctx.dirty = true;
   notify("notify.pkg.path_removed");
   return OnPressResult::Consumed;
 }
