@@ -642,9 +642,11 @@ bool apply_parser(IniParser *parser, Settings *out) {
       parse_language(ini_get(parser, "toolbox.language"), out->ui_lang);
   const char *pkg_path_count = ini_get(parser, "pkg.search_path_count");
   const bool has_pkg_path_count = pkg_path_count != nullptr;
-  if (has_pkg_path_count)
-    out->custom_pkg_search_path_count = 0;
   bool found_indexed_pkg_path = false;
+  std::array<std::string, kMaxCustomPkgSearchPaths> parsed_pkg_search_paths{};
+  std::size_t parsed_pkg_search_path_count = 0;
+  const bool explicitly_empty_pkg_search_paths =
+      has_pkg_path_count && trim_copy(pkg_path_count) == "0";
   const int declared_path_count =
       has_pkg_path_count ? std::max(0, std::min(
                                   atoi_def(pkg_path_count, 0),
@@ -661,16 +663,21 @@ bool apply_parser(IniParser *parser, Settings *out) {
     if (!valid_custom_pkg_search_path(candidate))
       continue;
     bool duplicate = false;
-    for (std::size_t n = 0; n < out->custom_pkg_search_path_count; ++n) {
-      if (out->custom_pkg_search_paths[n] == candidate) {
+    for (std::size_t n = 0; n < parsed_pkg_search_path_count; ++n) {
+      if (parsed_pkg_search_paths[n] == candidate) {
         duplicate = true;
         break;
       }
     }
     if (!duplicate) {
-      out->custom_pkg_search_paths[out->custom_pkg_search_path_count++] =
-          candidate;
+      parsed_pkg_search_paths[parsed_pkg_search_path_count++] = candidate;
     }
+  }
+  if (parsed_pkg_search_path_count > 0) {
+    out->custom_pkg_search_paths = std::move(parsed_pkg_search_paths);
+    out->custom_pkg_search_path_count = parsed_pkg_search_path_count;
+  } else if (explicitly_empty_pkg_search_paths) {
+    out->custom_pkg_search_path_count = 0;
   }
   if (!has_pkg_path_count && !found_indexed_pkg_path) {
     if (const char *legacy_path = ini_get(parser, "pkg.search_path")) {

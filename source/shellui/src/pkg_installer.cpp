@@ -14,6 +14,7 @@
 namespace {
 
 constexpr std::size_t kMaxPkgEntries = 64;
+constexpr std::size_t kMaxExaminedPkgDirEntries = 4096;
 constexpr std::size_t kMaxPathLength = 512;
 constexpr std::size_t kNumLanguages = 30;
 constexpr std::size_t kNumPlayGoIds = 64;
@@ -172,7 +173,14 @@ PkgInstallerScan scan_pkg_search_paths(const std::string *system_paths,
       continue;
     }
     result.accessible = true;
+    std::size_t examined_entries = 0;
+    bool pkg_entry_limit_reached = false;
     while (const struct dirent *entry = ::readdir(directory)) {
+      if (examined_entries >= kMaxExaminedPkgDirEntries) {
+        result.truncated = true;
+        break;
+      }
+      ++examined_entries;
       if (!has_pkg_suffix(entry->d_name))
         continue;
       std::string shellui_file = shellui_path;
@@ -184,6 +192,7 @@ PkgInstallerScan scan_pkg_search_paths(const std::string *system_paths,
         continue;
       if (result.entries.size() == kMaxPkgEntries) {
         result.truncated = true;
+        pkg_entry_limit_reached = true;
         break;
       }
       std::string system_file = system_path;
@@ -194,7 +203,7 @@ PkgInstallerScan scan_pkg_search_paths(const std::string *system_paths,
                                 std::move(system_file), system_path});
     }
     ::closedir(directory);
-    if (result.truncated)
+    if (pkg_entry_limit_reached)
       break;
   }
 
