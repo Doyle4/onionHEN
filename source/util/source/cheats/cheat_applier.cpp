@@ -210,6 +210,20 @@ int CheatApplier::toggle(const game_context_t &game, onion_cheat_file_t &file,
     if (reserve_len == 0 || reserve_len > ONION_MAX_PATCH_BYTES ||
         (!entry.enabled && patch.on_len == 0) ||
         (entry.enabled && patch.off_len == 0)) {
+      const char *reason = "missing on bytes";
+      if (reserve_len == 0) {
+        reason = "empty patch";
+      } else if (reserve_len > ONION_MAX_PATCH_BYTES) {
+        reason = "patch exceeds byte limit";
+      } else if (entry.enabled) {
+        reason = "missing off bytes";
+      }
+      LOG_ERROR(
+          "[Cheat] Invalid patch for %s pid=%d patch=%zu/%zu reason=%s "
+          "on_len=%zu off_len=%zu limit=%d asm=%d",
+          entry.enabled ? "disable" : "enable", (int)pid, i + 1,
+          entry.patch_count, reason, patch.on_len, patch.off_len,
+          ONION_MAX_PATCH_BYTES, patch.is_asm);
       status = status_tr("notify.cheats.invalid_patch", entry.name);
       return -1;
     }
@@ -259,8 +273,15 @@ int CheatApplier::toggle(const game_context_t &game, onion_cheat_file_t &file,
     Snapshot snapshot;
     snapshot.address = patch.address;
     snapshot.bytes.resize(reserve_len);
-    if (backend->read(pid, snapshot.address, snapshot.bytes.data(),
-                      snapshot.bytes.size()) < 0) {
+    const int read_result = backend->read(
+        pid, snapshot.address, snapshot.bytes.data(), snapshot.bytes.size());
+    if (read_result < 0) {
+      LOG_ERROR(
+          "[Cheat] Snapshot read failed pid=%d patch=%zu/%zu addr=0x%llx "
+          "len=%zu rc=%d",
+          (int)pid, i + 1, resolved.size(),
+          (unsigned long long)snapshot.address, snapshot.bytes.size(),
+          read_result);
       status = status_tr("notify.cheats.snapshot_failed", entry.name);
       return -1;
     }
